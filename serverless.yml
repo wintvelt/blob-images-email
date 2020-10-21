@@ -27,7 +27,7 @@ provider:
         - ses:SendRawEmail
         - ses:SendTemplatedEmail
         - ses:SendBulkTemplatedEmail
-      Resource: "arn:aws:ses:eu-central-1:*:*"
+      Resource: "arn:aws:ses:eu-west-1:*:*"
     - Effect: Allow
       Action:
         - s3:GetObject
