@@ -17,6 +17,8 @@ provider:
 
   environment:
     mailBucket: blob-images-email
+    webmaster: ${file(./serverlessDomainConfig.js):webmaster.${self:provider.stage}}
+    stage: ${self:provider.stage}
 
   iamRoleStatements:
     - Effect: Allow

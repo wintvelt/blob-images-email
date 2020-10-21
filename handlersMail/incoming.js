@@ -1,7 +1,9 @@
 import { s3 } from 'blob-common/core/s3';
+import { ses } from 'blob-common/core/ses';
 import { simpleParser } from 'mailparser';
 
 const Bucket = process.env.mailBucket || process.env.devMailBucket || 'blob-images-email';
+const webmaster = process.env.webmaster || process.env.devWebmaster || 'wintvelt@me.com';
 
 const handleRecord = async (record) => {
     const messageId = record.ses?.mail?.messageId;
@@ -12,11 +14,17 @@ const handleRecord = async (record) => {
         Bucket,
         Key: messageId
     });
-    console.log({data});
     const email = await simpleParser(data.Body);
-    console.log({email});
+    const subject = `FORWARD from clubalmanac - from ${email.from.text} - ${email.subject}`;
+    
     // forward message
-    return undefined;
+    return ses.sendEmail({
+        toEmail: webmaster,
+        fromEmail: 'clubalmanac mailforwarder <wouter@clubalmanac.com>',
+        subject,
+        data: email.html,
+        textData: email.text
+    });
 };
 
 export const main = async (event, context, callback) => {
