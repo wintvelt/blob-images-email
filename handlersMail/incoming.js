@@ -16,7 +16,7 @@ const handleRecord = async (record) => {
     });
     const email = await simpleParser(data.Body);
     const subject = `FORWARD from clubalmanac - from ${email.from.text} - ${email.subject}`;
-    
+
     // forward message
     return ses.sendEmail({
         toEmail: webmaster,
