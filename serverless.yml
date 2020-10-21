@@ -13,7 +13,7 @@ provider:
   name: aws
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'}
-  region: eu-central-2
+  region: eu-west-1
 
   environment:
     mailBucket: blob-images-email
