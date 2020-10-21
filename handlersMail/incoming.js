@@ -15,12 +15,12 @@ const handleRecord = async (record) => {
         Key: messageId
     });
     const email = await simpleParser(data.Body);
-    const subject = `FORWARD from clubalmanac - from ${email.from.text} - ${email.subject}`;
+    const subject = `FW: from clubalmanac - from ${email.from.text} - ${email.subject}`;
 
     // forward message
     return ses.sendEmail({
         toEmail: webmaster,
-        fromEmail: 'clubalmanac mailforwarder <wouter@clubalmanac.com>',
+        fromEmail: 'clubalmanac <wouter@clubalmanac.com>',
         subject,
         data: email.html,
         textData: email.text
