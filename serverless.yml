@@ -1,0 +1,40 @@
+service: blob-images-api
+
+# Create an optimized package for our functions
+package:
+  individually: true
+
+plugins:
+  - serverless-bundle # Package our functions with Webpack
+  - serverless-offline
+  - serverless-dotenv-plugin # Load .env as environment variables
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: eu-central-2
+
+  environment:
+    mailBucket: blob-images-email
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+        - ses:SendTemplatedEmail
+        - ses:SendBulkTemplatedEmail
+      Resource: "arn:aws:ses:eu-central-1:*:*"
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource: "arn:aws:s3:::*"
+
+functions:
+  incomingMailStream:
+    handler: handlersMail/incoming.main
+    events:
+      - s3:
+        bucket: {self:provider.environment.mailBucket}
+        event: s3:ObjectCreated:*
