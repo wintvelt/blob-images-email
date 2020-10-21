@@ -34,7 +34,3 @@ provider:
 functions:
   incomingMailStream:
     handler: handlersMail/incoming.main
-    events:
-      - s3:
-        bucket: {self:provider.environment.mailBucket}
-        event: s3:ObjectCreated:*
