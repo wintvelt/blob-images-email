@@ -4,6 +4,7 @@ import { simpleParser } from 'mailparser';
 
 const Bucket = process.env.mailBucket || process.env.devMailBucket || 'blob-images-email';
 const webmaster = process.env.webmaster || process.env.devWebmaster || 'wintvelt@me.com';
+const stage = process.env.stage || process.env.devStage || 'dev';
 
 const handleRecord = async (record) => {
     const messageId = record.ses?.mail?.messageId;
@@ -15,7 +16,7 @@ const handleRecord = async (record) => {
         Key: messageId
     });
     const email = await simpleParser(data.Body);
-    const subject = `FW: from clubalmanac - from ${email.from.text} - ${email.subject}`;
+    const subject = `FW: from clubalmanac ${stage.toUpperCase()} - from ${email.from.text} - ${email.subject}`;
 
     // forward message
     return ses.sendEmail({
