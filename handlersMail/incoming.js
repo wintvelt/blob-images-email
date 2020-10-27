@@ -1,10 +1,17 @@
 import { s3 } from 'blob-common/core/s3';
 import { ses } from 'blob-common/core/ses';
+import { btoa } from "blob-common/core/base64";
+import { dynamoDb } from "blob-common/core/db";
 import { simpleParser } from 'mailparser';
+import { bouncedInviteBody, bouncedInviteText } from '../helpers/email';
 
 const Bucket = process.env.mailBucket || process.env.devMailBucket || 'blob-images-email';
 const webmaster = process.env.webmaster || process.env.devWebmaster || 'wintvelt@me.com';
 const stage = process.env.stage || process.env.devStage || 'dev';
+const photoTable = () => ({
+    'dev': 'blob-images-photos-dev',
+    'prod': 'blob-images-photos'
+});
 
 const handleRecord = async (record) => {
     const messageId = record.ses?.mail?.messageId;
@@ -18,7 +25,57 @@ const handleRecord = async (record) => {
     const email = await simpleParser(data.Body);
     const subject = `FW: from clubalmanac ${stage.toUpperCase()} - from ${email.from.text} - ${email.subject}`;
 
-    // forward message
+    // check if bounced email
+    console.log(JSON.stringify(email.subject));
+    const isBounced = (email.subject === 'Delivery Status Notification (Failure)');
+    const textLines = email.text.split('\n') || [];
+    console.log(textLines.length);
+    const inviteLine = textLines.find(line => line.slice(0, 7) === 'Bezoek ');
+
+    if (isBounced && inviteLine) {
+        console.log('trying to bounce');
+        const link = inviteLine.slice(7, inviteLine.length - 18);
+        const inviteId = link.split('/').slice(-1)[0];
+        const domain = link.split('/')[2];
+        const environment = (domain.includes('dev') || domain.includes('localhost')) ? 'dev' : 'prod';
+        const TableName = photoTable(environment);
+        console.log({ link, domain, TableName, inviteId });
+        try {
+            const Key = JSON.parse(btoa(inviteId));
+            const result = await dynamoDb.get({ TableName, Key });
+            const invite = result.Item;
+            if (!invite) throw new Error('could not retrieve invite');
+            // inform invitor
+            const invitor = invite.invitation.from;
+            const toName = invitor.name;
+            const toEmail = invitor.email;
+            const invitee = invite.user;
+            const invName = invitee.name;
+            const invEmail = invitee.email;
+            const group = invite.group;
+            const groupName = group.name;
+            const groupId = group.SK;
+            const photoUrl = group.photoUrl;
+            const subject = `Uitnodiging aan ${invName} voor "${groupName}" konden we niet bezorgen aan ${invEmail}`;
+
+            const emailPromise = ses.sendEmail({
+                toEmail,
+                fromEmail: 'clubalmanac <wouter@clubalmanac.com>',
+                subject,
+                data: bouncedInviteBody({ domain, toName, invEmail, invName, groupName, groupId, photoUrl }),
+                textData: bouncedInviteText({ domain, toName, invEmail, invName, groupName, groupId })
+            });
+
+            // delete invite from Db
+            const deletePromise = dynamoDb.delete({ TableName, Key });
+
+            return Promise.all([emailPromise, deletePromise]);
+
+        } catch (_) {
+            // do nothing - will forward email to webmaster ;)
+        }
+    }
+    // in other cases, or invite retrieve error, simply forward message to webmaster
     return ses.sendEmail({
         toEmail: webmaster,
         fromEmail: 'clubalmanac <wouter@clubalmanac.com>',
