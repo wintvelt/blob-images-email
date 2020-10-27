@@ -8,10 +8,10 @@ import { bouncedInviteBody, bouncedInviteText } from '../helpers/email';
 const Bucket = process.env.mailBucket || process.env.devMailBucket || 'blob-images-email';
 const webmaster = process.env.webmaster || process.env.devWebmaster || 'wintvelt@me.com';
 const stage = process.env.stage || process.env.devStage || 'dev';
-const photoTable = () => ({
+const photoTable = {
     'dev': 'blob-images-photos-dev',
     'prod': 'blob-images-photos'
-});
+};
 
 const handleRecord = async (record) => {
     const messageId = record.ses?.mail?.messageId;
@@ -26,11 +26,12 @@ const handleRecord = async (record) => {
     const subject = `FW: from clubalmanac ${stage.toUpperCase()} - from ${email.from.text} - ${email.subject}`;
 
     // check if bounced email
-    console.log(JSON.stringify(email.subject));
+    console.log(email.subject);
     const isBounced = (email.subject === 'Delivery Status Notification (Failure)');
+    console.log(isBounced);
     const textLines = email.text.split('\n') || [];
-    console.log(textLines.length);
     const inviteLine = textLines.find(line => line.slice(0, 7) === 'Bezoek ');
+    console.log(inviteLine);
 
     if (isBounced && inviteLine) {
         console.log('trying to bounce');
@@ -38,7 +39,7 @@ const handleRecord = async (record) => {
         const inviteId = link.split('/').slice(-1)[0];
         const domain = link.split('/')[2];
         const environment = (domain.includes('dev') || domain.includes('localhost')) ? 'dev' : 'prod';
-        const TableName = photoTable(environment);
+        const TableName = photoTable[environment];
         console.log({ link, domain, TableName, inviteId });
         try {
             const Key = JSON.parse(btoa(inviteId));
@@ -71,8 +72,9 @@ const handleRecord = async (record) => {
 
             return Promise.all([emailPromise, deletePromise]);
 
-        } catch (_) {
+        } catch (error) {
             // do nothing - will forward email to webmaster ;)
+            console.log('failed to bounce because', error);
         }
     }
     // in other cases, or invite retrieve error, simply forward message to webmaster
