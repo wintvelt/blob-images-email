@@ -22,7 +22,7 @@ export const bouncedInviteBody = ({ domain, toName, invName, invEmail, groupName
         row([
             textCell(greeting(`Hi ${toName},`)),
             textCell(paragraph(`Je uitnodiging aan ${invName} om lid te worden van <strong><span style="font-size: 16px;">${groupName}</span></strong>`)),
-            textCell(paragraph(`konden we niet afleveren op het adres "${invEmail}". Weet je zeker dat dit adres klotp?`)),
+            textCell(paragraph(`konden we niet afleveren op het adres "${invEmail}". Weet je zeker dat dit adres klopt?`)),
             textCell(paragraph(`Je kunt op <a href="${url}">de ${groupName} pagina</a> een nieuwe uitnodiging sturen`)),
             dividerCell(dividerSrc),
         ]),
